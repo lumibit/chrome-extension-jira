@@ -25,7 +25,7 @@ jobs:
       - id: checkout
         name: Checkout repository
         uses: actions/checkout@v4
-    
+
       - id: update-version
         name: Update version
         run: |

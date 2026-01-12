@@ -1,1 +1,1 @@
-Files here are available under <https://lumibit.github.io/jira-chrome-extension/><MYFILE>
+Files here are available under <https://lumibit.github.io/chrome-extension-jira/><MYFILE>

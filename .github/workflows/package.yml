@@ -10,6 +10,7 @@ on:
         required: true
         type: boolean
     secrets:
+      # the private key of the chrome extension, comes from chrome://extensions/ -> pack extension workflow
       PRIVATE_KEY:
         required: true
 
@@ -18,9 +19,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - id: setup-node
+        name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+
       - id: checkout
         name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - id: echo-version
         name: Echo version
@@ -28,29 +35,23 @@ jobs:
           echo "Version from inputs: $NEW_VERSION"
         env:
           NEW_VERSION: ${{ inputs.newVersion }}
-      
+
       - id: update-manifest-json
         name: Inject new version to manifest.json
         run: |
           ls -la
           pwd
           jq --arg version "$NEW_VERSION" '.version = $version' "manifest.json" > "manifest.json.tmp"
-          mv "manifest.json.tmp" "manifest.json" 
+          mv "manifest.json.tmp" "manifest.json"
         env:
           NEW_VERSION: ${{ inputs.newVersion }}
-
-      - id: install-crx
-        name: Install crx tool
-        run: |
-          # install crx tool
-          npm install -g crx
 
       - id: package-extension
         name: Package Chrome extension
         run: |
           # package the extension
-          chmod +x package.sh
-          ./package.sh
+          chmod +x .github/workflows/package.sh
+          ./.github/workflows/package.sh
 
           # zip the crx file for upload
           zip extension.crx.zip extension.crx
@@ -59,12 +60,11 @@ jobs:
 
       - id: upload-artifacts
         name: Upload CRX file and updates.xml
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: extension-artifacts
           path: |
             extension.crx
-            updates.xml
+            docs/updates.xml
             extension.crx.zip
             manifest.json
-

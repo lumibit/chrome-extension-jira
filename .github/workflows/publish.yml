@@ -9,54 +9,77 @@ on:
       dryRun:
         required: true
         type: boolean
+      repository:
+        required: true
+        type: string
+    secrets:
+      APP_ID:
+        required: true
+      PRIVATE_KEY_2022_02_07:
+        required: true
 
 jobs:
   extension:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
+      - id: generate-token
+        name: Generate GitHub App Token for repository write access
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.PRIVATE_KEY_2022_02_07 }}
+          owner: lumibit
+          repositories: ${{ inputs.repository }}
 
       - id: checkout
-        name: Checkout content repository
-        uses: actions/checkout@v4
+        name: Checkout Repository
+        uses: actions/checkout@v6
+        with:
+          token: ${{ steps.generate-token.outputs.token }}
+          ref: ${{ github.ref_name }}
 
       - id: download-artifacts
         name: Download extension artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: extension-artifacts
-          path: docs/
+          path: .
 
       - id: place-updated-files
-        name: Copy manifest.json and updates.xml
+        name: Move files to correct locations
         run: |
-          cp docs/manifest.json .
-          cp docs/updates.xml .
+          # Move extension.crx to docs/ for GitHub Pages
+          mv extension.crx docs/extension.crx
 
       - id: commit-and-tag
         name: Commit changed files, add the release .crx to Github Pages
         if: ${{ inputs.dryRun == false }}
         uses: EndBug/add-and-commit@v9
         with:
-          message: "Version Update to ${{ inputs.newVersion }}"
-          author_email: 41898282+github-actions[bot]@users.noreply.github.com
-          author_name: github-actions
+          message: "Version update from github actions"
+          author_name: lumibit[bot]
+          author_email: 98383366+lumibit[bot]@users.noreply.github.com
+          committer_name: lumibit[bot]
+          committer_email: 98383366+lumibit[bot]@users.noreply.github.com
           add: |
             manifest.json 
-            updates.xml
             docs/extension.crx
             docs/updates.xml
           push: true
           tag: ${{ inputs.newVersion }}
           pathspec_error_handling: exitImmediately
 
-      - id: github-release
-        name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+      - id: create-github-release
+        name: Create a GitHub release
+        uses: ncipollo/release-action@v1
         if: ${{ inputs.dryRun == false }}
         with:
-          files: |
-            docs/extension.crx.zip
+          artifacts: "extension.crx.zip"
+          artifactErrorsFailBuild: true
+          replacesArtifacts: true
+          tag: ${{ inputs.newVersion }}
           name: ${{ inputs.newVersion }}
-          draft: false
-          tag_name: ${{ inputs.newVersion }}
+          generateReleaseNotes: true

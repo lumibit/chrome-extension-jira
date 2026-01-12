@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const version = manifest.version;
         const footer = document.getElementById('footerVersion');
         if (footer && version) {
-            footer.textContent = '2025 Lumibit GmbH v' + version;
+            footer.textContent = '2026 Lumibit GmbH v' + version;
         }
     }
 
